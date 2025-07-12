@@ -9,7 +9,7 @@
   border-right: 0;
   left: 0;
   overflow-y: auto;
-  padding-bottom: 3rem;
+  padding-bottom: 3rem; 
   padding-top: 3rem;
   position: absolute;
   right: 0;
@@ -50,10 +50,12 @@
   text-decoration: none;
   transition: text-decoration var(--duration-short) ease;
   word-wrap: break-word;
+  font-size: 1.6rem;
 }
 
 .mega-menu__link--level-2 {
   font-weight: bold;
+  font-size: 1.7rem;
 }
 
 .header--top-center .mega-menu__list {
@@ -66,22 +68,50 @@
 .header--top-center .mega-menu__list > li {
   width: 16%;
   padding-right: 2.4rem;
+  font-size: 1.8rem;
 }
 
-.mega-menu__link:hover,
+.mega-menu__link:hover {
+  color: #c44d82;
+  text-decoration: none;
+}
+
 .mega-menu__link--active {
-  color: rgb(var(--color-foreground));
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .mega-menu__link--active:hover {
-  text-decoration-thickness: 0.2rem;
+  text-decoration: none;
 }
 
 .mega-menu .mega-menu__list--condensed {
-  display: block;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  column-gap: 4rem;
+  row-gap: 1.8rem;
+  column-gap: 4rem;
 }
+
+.mega-menu__list > li,
+.mega-menu__list--condensed > li {
+  position: relative;
+}
+
+.mega-menu__list > li + li::before,
+.mega-menu__list--condensed > li + li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4rem;
+  border-left: 0.1rem solid rgba(var(--color-foreground), 0.08);
+}
+
 
 .mega-menu__list--condensed .mega-menu__link {
   font-weight: normal;
+  font-size: 1.8rem;
 }
+
+

@@ -25,13 +25,20 @@
                 </span>
                 {{- 'icon-caret.svg' | inline_asset_content -}}
               </summary>
+              {%- assign no_grandchildren = true -%}
+              {%- for childlink in link.links -%}
+                {%- if childlink.links != blank -%}
+                  {%- assign no_grandchildren = false -%}
+                  {%- break -%}
+                {%- endif -%}
+              {%- endfor -%}
               <div
                 id="MegaMenu-Content-{{ forloop.index }}"
                 class="mega-menu__content color-{{ section.settings.menu_color_scheme }} gradient motion-reduce global-settings-popup"
                 tabindex="-1"
               >
                 <ul
-                  class="mega-menu__list page-width{% if link.levels == 1 %} mega-menu__list--condensed{% endif %}"
+                  class="mega-menu__list page-width{% if no_grandchildren == 1 %} mega-menu__list--condensed{% endif %}"
                   role="list"
                 >
                   {%- for childlink in link.links -%}

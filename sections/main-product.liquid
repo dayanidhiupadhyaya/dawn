@@ -1,3 +1,125 @@
+{% if product.metafields.custom.selected_variant == true or product.metafields.custom.selected_variant == null %}
+<style>
+  .hidden {
+    display: none;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const mediaGallery = document.querySelector('media-gallery');
+    const productSection = document.querySelector(".product-variant-id");
+    const sectionID = "{{ section.id }}";
+
+    // Ensure required elements are available
+    if (!mediaGallery || !productSection) {
+      console.error('Required elements are missing from the DOM.');
+      return;
+    }
+
+    const handle = `products/${"{{ product.handle }}"}.js`;
+
+    fetch(`${window.Shopify.routes.root}${handle}`)
+      .then(response => response.json())
+      .then(product => {
+        const optionsToWatch = "{{ settings.selected_option_name }}".split(",");
+        const colorOption = product.options.find(option => optionsToWatch.includes(option.name)) || null;
+
+        if (!colorOption) {
+          console.warn("No relevant options available for this product.");
+          return;
+        }
+
+        const colorValues = colorOption.values;
+        const colorImagePositions = {};
+
+        // Map colors to their starting image positions
+        colorValues.forEach(color => {
+          const variant = product.variants.find(variant => variant.options[colorOption.position - 1] === color);
+
+          if (variant && variant.featured_image) {
+            colorImagePositions[color] = variant.featured_image.position;
+          }
+        });
+
+        // Sort colors by starting image position
+        const sortedColors = Object.entries(colorImagePositions).sort((a, b) => a[1] - b[1]);
+        const colorImageRanges = {};
+
+        sortedColors.forEach((color, index) => {
+          const colorName = color[0];
+          const startPos = color[1];
+          const endPos = sortedColors[index + 1] ? sortedColors[index + 1][1] : null;
+
+          colorImageRanges[colorName] = endPos ? [startPos, endPos] : [startPos];
+        });
+
+        // Group image IDs by color based on image ranges
+        const colorImageIDs = {};
+        Object.entries(colorImageRanges).forEach(([color, range]) => {
+          const startPos = range[0];
+          const endPos = range[1] || product.media.length + 1; // If no end position, use the end of the media list
+          
+          const imageIDs = product.media
+            .filter((media, index) => {
+              const imagePosition = index + 1; // Adjust index to be position-based
+              return imagePosition >= startPos && imagePosition < endPos;
+            })
+            .map(media => media.id);
+
+          colorImageIDs[color] = imageIDs;
+        });
+
+        // Apply data-media-group attributes to images
+        Object.entries(colorImageIDs).forEach(([color, imageIDs]) => {
+          imageIDs.forEach(mediaID => {
+            const selector = `[data-media-id="${sectionID}-${mediaID}"], [data-target="${sectionID}-${mediaID}"]`;
+            const mediaItems = mediaGallery.querySelectorAll(`li${selector}`);
+
+            mediaItems.forEach(mediaItem => {
+              mediaItem.setAttribute('data-media-group', color);
+            });
+          });
+        });
+
+        const showVariantImage = () => {
+          const variantSelects = document.querySelector('variant-selects');
+
+          // Get the selected color
+          const currentValues = Array.from(
+            variantSelects.querySelectorAll('select option[selected], fieldset input:checked')
+          ).map(el => el.value);
+
+          const selectedColor = currentValues.find(value => colorImageRanges.hasOwnProperty(value));
+
+          // Show/hide images based on the selected color
+          mediaGallery.querySelectorAll('ul li[data-media-group]').forEach(mediaItem => {
+            if (mediaItem.getAttribute('data-media-group') === selectedColor) {
+              mediaItem.classList.remove('hidden');
+            } else {
+              mediaItem.classList.add('hidden');
+            }
+          });
+
+          // Reinitialize slider if necessary
+          mediaGallery.querySelectorAll('slider-component').forEach(slider => {
+            if (typeof slider.initPages === 'function') {
+              slider.initPages();
+            }
+          });
+        };
+
+        // Initial display setup
+        showVariantImage();
+
+        // Update images when a new variant is selected
+        productSection.addEventListener('change', showVariantImage);
+      })
+      .catch(error => console.error("Error fetching product data:", error));
+  });
+</script>
+{% endif %}
+
 <product-info
   id="MainProduct-{{ section.id }}"
   class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}"
@@ -239,20 +361,9 @@
                     | item_count_for_variant: product.selected_or_first_available_variant.id
                   -%}
                   {% # theme-check-enable %}
-                  <span class="visually-hidden" id="quantity-label-{{ section.id }}">
-                    {%- if cart_qty > 0 -%}
-                      {{- 'products.product.quantity.in_cart_aria_label' | t: quantity: cart_qty -}}
-                    {%- else -%}
-                      {{- 'products.product.quantity.label' | t -}}
-                    {%- endif -%}
-                  </span>
-                  <label
-                    class="quantity__label form__label"
-                    for="Quantity-{{ section.id }}"
-                    aria-labelledby="quantity-label-{{ section.id }}"
-                  >
-                    <span aria-hidden="true">{{ 'products.product.quantity.label' | t }}</span>
-                    <span class="quantity__rules-cart{% if cart_qty == 0 %} hidden{% endif %}" aria-hidden="true">
+                  <label class="quantity__label form__label" for="Quantity-{{ section.id }}">
+                    {{ 'products.product.quantity.label' | t }}
+                    <span class="quantity__rules-cart{% if cart_qty == 0 %} hidden{% endif %}">
                       {%- render 'loading-spinner' -%}
                       <span
                         >(
@@ -329,7 +440,7 @@
                                 | money_with_currency
                               -%}
                               <span class="price-per-item--current">
-                                {{- 'products.product.volume_pricing.price_at_each_html' | t: price: variant_price -}}
+                                {{- 'products.product.volume_pricing.price_at_each' | t: price: variant_price -}}
                               </span>
                             {%- else -%}
                               {%- for price_break in volume_pricing_array -%}
@@ -337,7 +448,7 @@
                                   {%- assign price_break_price = price_break.price | money_with_currency -%}
                                   <span class="price-per-item--current">
                                     {{-
-                                      'products.product.volume_pricing.price_at_each_html'
+                                      'products.product.volume_pricing.price_at_each'
                                       | t: price: price_break_price
                                     -}}
                                   </span>
@@ -367,16 +478,13 @@
                                 </dt>
                                 <dd>
                                   <span class="price-per-item--current">
-                                    {{-
-                                      'products.product.volume_pricing.price_at_each_html'
-                                      | t: price: variant_price
-                                    -}}
+                                    {{- 'products.product.volume_pricing.price_at_each' | t: price: variant_price -}}
                                   </span>
                                 </dd>
                               </dl>
                             {%- else -%}
                               <span class="price-per-item--current">
-                                {{- 'products.product.volume_pricing.price_at_each_html' | t: price: variant_price -}}
+                                {{- 'products.product.volume_pricing.price_at_each' | t: price: variant_price -}}
                               </span>
                             {%- endif -%}
                           </div>
@@ -420,7 +528,7 @@
                             {%- assign price = product.selected_or_first_available_variant.price
                               | money_with_currency
                             -%}
-                            <span data-text="{{ 'products.product.volume_pricing.price_at_each_html' | t: price: variant_price }}">
+                            <span data-text="{{ 'products.product.volume_pricing.price_at_each' | t: price: variant_price }}">
                               {{- 'sections.quick_order_list.each' | t: money: price -}}
                             </span>
                           </li>
@@ -431,7 +539,7 @@
                                 {{- price_break.minimum_quantity -}}
                                 <span aria-hidden="true">+</span></span
                               >
-                              <span data-text="{{ 'products.product.volume_pricing.price_at_each_html' | t: price: price_break_price }}">
+                              <span data-text="{{ 'products.product.volume_pricing.price_at_each' | t: price: price_break_price }}">
                                 {{- 'sections.quick_order_list.each' | t: money: price_break_price -}}
                               </span>
                             </li>
@@ -848,6 +956,7 @@
           "min": 0,
           "max": 100,
           "step": 1,
+          "info": "t:sections.main-product.blocks.inventory.settings.inventory_threshold.info",
           "default": 10
         },
         {
@@ -943,6 +1052,14 @@
           "id": "share_label",
           "label": "t:sections.main-product.blocks.share.settings.text.label",
           "default": "t:sections.main-product.blocks.share.settings.text.default"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:sections.main-product.blocks.share.settings.featured_image_info.content"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:sections.main-product.blocks.share.settings.title_info.content"
         }
       ]
     },
@@ -966,6 +1083,7 @@
           "type": "text",
           "id": "heading",
           "default": "t:sections.main-product.blocks.collapsible_tab.settings.heading.default",
+          "info": "t:sections.main-product.blocks.collapsible_tab.settings.heading.info",
           "label": "t:sections.main-product.blocks.collapsible_tab.settings.heading.label"
         },
         {
@@ -1486,8 +1604,8 @@
         },
         {
           "type": "header",
-          "content": "t:sections.main-product.blocks.icon_with_text.settings.pairing_1.label",
-          "info": "t:sections.main-product.blocks.icon_with_text.settings.pairing_1.info"
+          "content": "t:sections.main-product.blocks.icon_with_text.settings.content.label",
+          "info": "t:sections.main-product.blocks.icon_with_text.settings.content.info"
         },
         {
           "type": "select",
@@ -1686,10 +1804,6 @@
           "info": "t:sections.main-product.blocks.icon_with_text.settings.heading.info"
         },
         {
-          "type": "header",
-          "content": "t:sections.main-product.blocks.icon_with_text.settings.pairing_2.label"
-        },
-        {
           "type": "select",
           "id": "icon_2",
           "options": [
@@ -1884,10 +1998,6 @@
           "default": "t:sections.main-product.blocks.icon_with_text.settings.heading_2.default",
           "label": "t:sections.main-product.blocks.icon_with_text.settings.heading_2.label",
           "info": "t:sections.main-product.blocks.icon_with_text.settings.heading.info"
-        },
-        {
-          "type": "header",
-          "content": "t:sections.main-product.blocks.icon_with_text.settings.pairing_3.label"
         },
         {
           "type": "select",
@@ -2103,7 +2213,8 @@
     },
     {
       "type": "header",
-      "content": "t:sections.main-product.settings.header.content"
+      "content": "t:sections.main-product.settings.header.content",
+      "info": "t:sections.main-product.settings.header.info"
     },
     {
       "type": "select",
@@ -2123,7 +2234,8 @@
         }
       ],
       "default": "large",
-      "label": "t:sections.main-product.settings.media_size.label"
+      "label": "t:sections.main-product.settings.media_size.label",
+      "info": "t:sections.main-product.settings.media_size.info"
     },
     {
       "type": "checkbox",
@@ -2173,26 +2285,6 @@
     },
     {
       "type": "select",
-      "id": "mobile_thumbnails",
-      "options": [
-        {
-          "value": "columns",
-          "label": "t:sections.main-product.settings.mobile_thumbnails.options__1.label"
-        },
-        {
-          "value": "show",
-          "label": "t:sections.main-product.settings.mobile_thumbnails.options__2.label"
-        },
-        {
-          "value": "hide",
-          "label": "t:sections.main-product.settings.mobile_thumbnails.options__3.label"
-        }
-      ],
-      "default": "hide",
-      "label": "t:sections.main-product.settings.mobile_thumbnails.label"
-    },
-    {
-      "type": "select",
       "id": "media_position",
       "options": [
         {
@@ -2205,7 +2297,8 @@
         }
       ],
       "default": "left",
-      "label": "t:sections.main-product.settings.media_position.label"
+      "label": "t:sections.main-product.settings.media_position.label",
+      "info": "t:sections.main-product.settings.media_position.info"
     },
     {
       "type": "select",
@@ -2225,7 +2318,28 @@
         }
       ],
       "default": "lightbox",
-      "label": "t:sections.main-product.settings.image_zoom.label"
+      "label": "t:sections.main-product.settings.image_zoom.label",
+      "info": "t:sections.main-product.settings.image_zoom.info"
+    },
+    {
+      "type": "select",
+      "id": "mobile_thumbnails",
+      "options": [
+        {
+          "value": "columns",
+          "label": "t:sections.main-product.settings.mobile_thumbnails.options__1.label"
+        },
+        {
+          "value": "show",
+          "label": "t:sections.main-product.settings.mobile_thumbnails.options__2.label"
+        },
+        {
+          "value": "hide",
+          "label": "t:sections.main-product.settings.mobile_thumbnails.options__3.label"
+        }
+      ],
+      "default": "hide",
+      "label": "t:sections.main-product.settings.mobile_thumbnails.label"
     },
     {
       "type": "checkbox",

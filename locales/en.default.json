@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin language editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "general": {
     "password_page": {
@@ -106,8 +115,8 @@
   },
   "products": {
     "product": {
-      "add_to_cart": "Add to cart",
-      "choose_options": "Choose options",
+      "add_to_cart": "Add To Cart",
+      "choose_options": "Buy Options",
       "choose_product_options": "Choose options for {{ product_name }}",
       "description": "Description",
       "inventory_in_stock": "In stock",
@@ -129,7 +138,6 @@
         "play_model": "Play 3D Viewer",
         "play_video": "Play video"
       },
-      "nested_label": "{{ title }} for {{ parent_title }}",
       "quantity": {
         "label": "Quantity",
         "input_label": "Quantity for {{ product }}",
@@ -141,14 +149,13 @@
         "min_of": "Min {{ quantity }}",
         "max_of": "Max {{ quantity }}",
         "in_cart_html": "<span class=\"quantity-cart\">{{ quantity }}</span> in cart",
-        "in_cart_aria_label": "Quantity ({{ quantity }} in cart)",
         "note": "View quantity rules"
       },
       "volume_pricing": {
         "title": "Volume Pricing",
         "note": "Volume pricing available",
         "minimum": "{{ quantity }}+",
-        "price_at_each_html": "at {{ price }}/ea",
+        "price_at_each": "at {{ price }}/ea",
         "price_range": "{{ minimum }} - {{ maximum }}"
       },
       "pickup_availability": {
