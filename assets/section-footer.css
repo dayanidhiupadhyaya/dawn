@@ -18,7 +18,7 @@
 
   .footer-block.grid__item {
     padding: 0;
-    margin: 4rem 0;
+    margin: 1rem 0;
     width: 100%;
   }
 
@@ -436,6 +436,64 @@
 
 .footer-block__brand-info .footer__list-social.list-social {
   justify-content: flex-start;
+}
+
+/* Mobile footer menus collapse */
+
+.footer__list-menu {
+  margin-bottom: 1.2rem;
+  overflow: hidden;
+}
+.footer__list-menu summary {
+  display: flex;
+  position: relative;
+  line-height: 1;
+  padding: 0 rem 0;
+}
+
+.footer__list-menu summary .footer-menu__icon {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.footer-menu__icon .icon-minus {
+  display: none;
+}
+
+.footer__list-menu[open] .footer-menu__icon .icon-plus {
+  display: none;
+}
+
+.footer__list-menu[open] .footer-menu__icon .icon-minus {
+  display: inline;
+}
+
+.footer__list-menu > summary ~ * {
+  margin-bottom: 0.0rem;
+  padding: 0 0.1rem;
+}
+
+@media screen and (min-width: 750px) {
+  .footer__list-menu {
+    border: none;
+    margin: 0;
+  }
+
+  .footer__list-menu summary {
+    padding: 0;
+    cursor: default;
+  }
+
+  .footer__list-menu summary .footer-menu__icon {
+    display: none;
+  }
+
+  .footer__list-menu > summary ~ * {
+    display: block !important;
+    margin-bottom: 0;
+    padding: 0;
+  }
 }
 
 .footer-block__details-content .placeholder-svg {
